@@ -1,11 +1,24 @@
 steps:
-  - name: "gcr.io/cloud-builders/docker"
+  # Paso 1: Copiar los archivos necesarios al contenedor
+  - name: "gcr.io/cloud-builders/gcloud"
     args:
-      - "build"
-      - "-t"
-      - "europe-west1-docker.pkg.dev/$PROJECT_ID/volunteer-matching-repo/generator:latest"
-      - "."
+      - "cp"
+      - "Data_generator/streaming_generator.py"
+      - "Dataflow/new_dataflow_pipeline.py"
+      - "Dataflow/requirements.txt"
+      - "/workspace/"  # Copiar los archivos a la raíz del contenedor
+
+  # Paso 2: Construir la imagen Docker usando el Dockerfile
   - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/my-image:$COMMIT_SHA", "."]
+    dir: "Data_generator"  # El Dockerfile está en esta carpeta
+
+  # Paso 3: Subir la imagen a Artifact Registry (o Container Registry)
+  - name: "gcr.io/cloud-builders/gcloud"
     args:
+      - "docker"
       - "push"
-      - "europe-west1-docker.pkg.dev/$PROJECT_ID/volunteer-matching-repo/generator:latest"
+      - "gcr.io/$PROJECT_ID/my-image:$COMMIT_SHA"
+
+images:
+  - "gcr.io/$PROJECT_ID/my-image:$COMMIT_SHA"
